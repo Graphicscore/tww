@@ -653,8 +653,7 @@ bool dCamera_c::pauseEvCamera() {
 
 /* 800B0AF8-800B14D4       .text fixedFrameEvCamera__9dCamera_cFv */
 bool dCamera_c::fixedFrameEvCamera() {
-    /* Nonmatching - stack frame is 0x20 short of the target, so every local slot is offset;
-     * instruction sequence otherwise matches */
+    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -767,7 +766,9 @@ bool dCamera_c::fixedFrameEvCamera() {
     mViewCache.mFovy = w->mFovy;
 
     if (w->mHasBank) {
-        mViewCache.mBank = cSAngle(DEG2S(w->mBank));
+        s16 bank = cAngle::d2s(w->mBank);
+
+        mViewCache.mBank = cSAngle(bank);
         setFlag(0x400);
     }
 
@@ -780,8 +781,6 @@ bool dCamera_c::fixedFrameEvCamera() {
 
 /* 800B14D4-800B18E4       .text stokerEvCamera__9dCamera_cFv */
 bool dCamera_c::stokerEvCamera() {
-    /* Nonmatching - one instruction of scheduling around the cSAngle bank temp, plus local-static
-     * and literal pool serials that resolve once the rest of the TU is written */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -833,7 +832,9 @@ bool dCamera_c::stokerEvCamera() {
     mViewCache.mFovy = w->mFovy;
 
     if (w->mHasBank) {
-        mViewCache.mBank = cSAngle(DEG2S(w->mBank));
+        s16 bank = cAngle::d2s(w->mBank);
+
+        mViewCache.mBank = cSAngle(bank);
         setFlag(0x400);
     }
 
@@ -846,8 +847,7 @@ bool dCamera_c::stokerEvCamera() {
 
 /* 800B18E4-800B2680       .text rollingEvCamera__9dCamera_cFv */
 bool dCamera_c::rollingEvCamera() {
-    /* Nonmatching - local-static and literal pool serials only, which resolve once the rest of
-     * the TU is written */
+    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
     static f32 DefaultRoll = 2.0f;
@@ -1011,8 +1011,6 @@ bool dCamera_c::rollingEvCamera() {
 
 /* 800B2680-800B2B60       .text fixedPositionEvCamera__9dCamera_cFv */
 bool dCamera_c::fixedPositionEvCamera() {
-    /* Nonmatching - one instruction of scheduling around the cSAngle bank temp, plus local-static
-     * and literal pool serials that resolve once the rest of the TU is written */
     static cXyz DefaultGap = cXyz::Zero;
     static f32 DefaultRadius = 100000.0f;
     static f32 DefaultCtrCus = 1.0f;
@@ -1087,7 +1085,9 @@ bool dCamera_c::fixedPositionEvCamera() {
     mViewCache.mFovy = w->mFovy;
 
     if (w->mHasBank) {
-        mViewCache.mBank = cSAngle(DEG2S(w->mBank));
+        s16 bank = cAngle::d2s(w->mBank);
+
+        mViewCache.mBank = cSAngle(bank);
         setFlag(0x400);
     }
 
@@ -1100,8 +1100,7 @@ bool dCamera_c::fixedPositionEvCamera() {
 
 /* 800B2B60-800B3CC8       .text uniformTransEvCamera__9dCamera_cFv */
 bool dCamera_c::uniformTransEvCamera() {
-    /* Nonmatching - curvePoints$5622 static-object serial only, resolves once the rest of the TU
-     * is written */
+    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -1385,8 +1384,7 @@ bool dCamera_c::uniformTransEvCamera() {
 
 /* 800B3E18-800B5110       .text uniformBrakeEvCamera__9dCamera_cFv */
 bool dCamera_c::uniformBrakeEvCamera() {
-    /* Nonmatching - local-static and literal pool serials plus @stringBase0 offsets only, all of
-     * which resolve once the rest of the TU is written */
+    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -1689,8 +1687,7 @@ bool dCamera_c::uniformBrakeEvCamera() {
 
 /* 800B514C-800B6434       .text uniformAcceleEvCamera__9dCamera_cFv */
 bool dCamera_c::uniformAcceleEvCamera() {
-    /* Nonmatching - local-static and literal pool serials plus @stringBase0 offsets only, all of
-     * which resolve once the rest of the TU is written */
+    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -2442,8 +2439,7 @@ bool dCamera_c::talktoEvCamera() {
 /* 800B7EBC-800B8108       .text maptoolIdEvCamera__9dCamera_cFv */
 bool dCamera_c::maptoolIdEvCamera() {
     /* Nonmatching - regswap on the field_0x14/field_0x10 locals, plus @stringBase0 and float
-     * literal pool offsets that resolve once the rest of the TU is written. Inline usage is
-     * confirmed against frameworkD.map (firstMapData/nextMapData/MapToolCameraTimer). */
+     * literal pool offsets */
     if (m108 == 0) {
         int id;
 
@@ -2523,8 +2519,7 @@ bool dCamera_c::styleEvCamera() {
 
 /* 800B81D0-800B8AB8       .text gameOverEvCamera__9dCamera_cFv */
 bool dCamera_c::gameOverEvCamera() {
-    /* Nonmatching - constant 8-byte shift in the stack slot assignment for the cSAngle argument
-     * temporaries; frame size and all instructions otherwise match */
+    /* Nonmatching - literal pool and local-static serials only */
     GameOverWork* w = (GameOverWork*)&mWork;
 
     cXyz ctr_gap(0.0f, -25.0f, 0.0f);
@@ -2702,13 +2697,9 @@ bool dCamera_c::gameOverEvCamera() {
         break;
     }
 
-    cSAngle ctr_angle = angle;
+    mViewCache.mCenter = relationalPos(mpPlayerActor, &w->mCenterGap, angle);
 
-    mViewCache.mCenter = relationalPos(mpPlayerActor, &w->mCenterGap, ctr_angle);
-
-    cSAngle eye_angle = angle;
-
-    mViewCache.mEye = relationalPos(mpPlayerActor, &w->mEyeGap, eye_angle);
+    mViewCache.mEye = relationalPos(mpPlayerActor, &w->mEyeGap, angle);
     w->mTimer++;
     SkipSmoother();
     return true;
@@ -2760,8 +2751,7 @@ bool dCamera_c::tactEvCamera() {
 
 /* 800B8C90-800B99B8       .text windDirectionEvCamera__9dCamera_cFv */
 bool dCamera_c::windDirectionEvCamera() {
-    /* Nonmatching - literal pool serials and @stringBase0 offsets only, which resolve once the
-     * rest of the TU is written */
+    /* Nonmatching - literal pool and local-static serials only */
     WindDirectionWork* w = (WindDirectionWork*)&mWork;
 
     cXyz center_gap[3] = {
@@ -2987,7 +2977,7 @@ bool dCamera_c::windDirectionEvCamera() {
 
 /* 800B99B8-800B9FB0       .text turnToActorEvCamera__9dCamera_cFv */
 bool dCamera_c::turnToActorEvCamera() {
-    /* Nonmatching - @9375 static-object serial only, resolves once the rest of the TU is written */
+    /* Nonmatching - literal pool and local-static serials only */
     static cXyz DefaultGap(0.0f, 40.0f, 0.0f);
     static f32 DefaultCushion = 1.0f;
     static f32 DefaultDist = 120.0f;
@@ -3059,8 +3049,8 @@ bool dCamera_c::turnToActorEvCamera() {
 
 /* 800B9FB0-800BA688       .text tornadoWarpEvCamera__9dCamera_cFv */
 bool dCamera_c::tornadoWarpEvCamera() {
-    /* Nonmatching - stack slot ordering for the cXyz locals and a regswap between the loop index
-     * and the nearest-candidate index */
+    /* Nonmatching - regswap between the nearest-index and loop-counter locals, plus literal
+     * pool serials */
     TornadoWarpWork* w = (TornadoWarpWork*)&mWork;
 
     if (m11C == 0) {
@@ -3137,7 +3127,9 @@ bool dCamera_c::tornadoWarpEvCamera() {
         mViewCache.mFovy +=
             ((mViewCache.mFovy + ratio * (70.0f - mViewCache.mFovy)) - mViewCache.mFovy) * 0.15f;
         mViewCache.mDirection.Val(mViewCache.mEye - mViewCache.mCenter);
-        mViewCache.mBank += (DEG2S(cM_rndFX(6.0f * ratio)) - mViewCache.mBank) * 0.15f;
+        f32 shake = cM_rndFX(6.0f * ratio);
+
+        mViewCache.mBank += (DEG2S(shake) - mViewCache.mBank) * 0.15f;
         setFlag(0x400);
 
         if (--w->mTimer != 0) {
@@ -3219,8 +3211,7 @@ bool dCamera_c::loadEvCamera() {
 
 /* 800BA904-800BB39C       .text useItem0EvCamera__9dCamera_cFv */
 bool dCamera_c::useItem0EvCamera() {
-    /* Nonmatching - the mType range test compiles to a branch pair the target spells with one
-     * branch, plus the array-template rodata object's serial */
+    /* Nonmatching - the array-template rodata object's serial only */
     cXyz c5(19.885f, 11.056f, -2.464f);
     cXyz a0[2] = {
         cXyz(45.319f, 57.196f, 22.627f),
@@ -3290,11 +3281,17 @@ bool dCamera_c::useItem0EvCamera() {
 
         cXyz eye;
 
-        if ((m07C & 7) == 0 && w->mType < 4 && w->mType >= 2) {
-            cXyz tmp = eye_tbl[w->mType][0];
+        if ((m07C & 7) == 0) {
+            switch (w->mType) {
+            case 2:
+            case 3: {
+                cXyz tmp = eye_tbl[w->mType][0];
 
-            eye_tbl[w->mType][0] = eye_tbl[w->mType][1];
-            eye_tbl[w->mType][1] = tmp;
+                eye_tbl[w->mType][0] = eye_tbl[w->mType][1];
+                eye_tbl[w->mType][1] = tmp;
+                break;
+            }
+            }
         }
 
         w->mCenter = relationalPos(mpPlayerActor, ctr_tbl[w->mType]);
@@ -3377,8 +3374,7 @@ bool dCamera_c::useItem0EvCamera() {
 
 /* 800BB39C-800BBD88       .text useItem1EvCamera__9dCamera_cFv */
 bool dCamera_c::useItem1EvCamera() {
-    /* Nonmatching - the mType range test compiles to a branch pair the target spells with one
-     * branch, plus the array-template rodata object's serial */
+    /* Nonmatching - the array-template rodata object's serial only */
     cXyz d5(0.0f, -16.0f, -17.0f);
     cXyz b5[3] = {
         cXyz(36.0f, 55.0f, 17.0f),
@@ -3440,11 +3436,17 @@ bool dCamera_c::useItem1EvCamera() {
 
         cXyz eye;
 
-        if ((m07C & 7) == 0 && w->mType < 4 && w->mType >= 2) {
-            cXyz tmp = eye_tbl[w->mType][0];
+        if ((m07C & 7) == 0) {
+            switch (w->mType) {
+            case 2:
+            case 3: {
+                cXyz tmp = eye_tbl[w->mType][0];
 
-            eye_tbl[w->mType][0] = eye_tbl[w->mType][1];
-            eye_tbl[w->mType][1] = tmp;
+                eye_tbl[w->mType][0] = eye_tbl[w->mType][1];
+                eye_tbl[w->mType][1] = tmp;
+                break;
+            }
+            }
         }
 
         w->mCenter = relationalPos(mpPlayerActor, ctr_tbl[w->mType]);
@@ -3524,8 +3526,6 @@ bool dCamera_c::useItem1EvCamera() {
 
 /* 800BBD88-800BC364       .text getItemEvCamera__9dCamera_cFv */
 bool dCamera_c::getItemEvCamera() {
-    /* Nonmatching - regswap between the return flag and the loop index, one hoisted load, plus
-     * literal pool serials that resolve once the rest of the TU is written */
     cXyz ctr_gap(-0.095f, 0.428f, -7.177f);
     Vec eye_gap_l[4] = {
         {0.17f, 97.0f, -57.78f},
@@ -3541,6 +3541,7 @@ bool dCamera_c::getItemEvCamera() {
     };
 
     GetItemWork* w = (GetItemWork*)&mWork;
+    int i;
     bool ret = false;
 
     if (m11C == 0) {
@@ -3548,6 +3549,7 @@ bool dCamera_c::getItemEvCamera() {
     }
 
     switch (w->mState) {
+    case 0:
     default:
         getEvIntData(&w->mTimer1, "Timer1", 0x1B);
         getEvIntData(&w->mTimer2, "Timer2", 5);
@@ -3569,7 +3571,7 @@ bool dCamera_c::getItemEvCamera() {
 
         cXyz eye;
 
-        for (int i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             eye = relationalPos(mpPlayerActor, &eye_gap_r[i]);
 
             if (eye.y < m368 + positionOf(mpPlayerActor).y) {
@@ -3604,11 +3606,11 @@ bool dCamera_c::getItemEvCamera() {
         cSAngle inclination;
         cSAngle azimuth;
 
+        f32 radius = mViewCache.mDirection.R();
+
         azimuth = mViewCache.mDirection.V();
         inclination = mViewCache.mDirection.U();
-        f32 radius =
-            mViewCache.mDirection.R() + (w->mGlobe.R() - mViewCache.mDirection.R()) * ratio;
-
+        radius += ratio * (w->mGlobe.R() - radius);
         azimuth += (w->mGlobe.V() - azimuth) * ratio;
         inclination += (w->mGlobe.U() - inclination) * ratio;
         mViewCache.mDirection.Val(radius, azimuth, inclination);
@@ -3640,7 +3642,6 @@ bool dCamera_c::getItemEvCamera() {
 
 /* 800BC364-800BC9D8       .text possessedEvCamera__9dCamera_cFv */
 bool dCamera_c::possessedEvCamera() {
-    /* Nonmatching - @stringBase0 offsets only, resolves once the rest of the TU is written */
     PossessedWork* w = (PossessedWork*)&mWork;
     bool ret = false;
 
@@ -3725,15 +3726,19 @@ bool dCamera_c::possessedEvCamera() {
         mViewCache.mEye += (eye - mViewCache.mEye) * w->mCushion;
         mViewCache.mFovy += (w->mFovy - mViewCache.mFovy) * ratio;
 
-        if (w->mBlure == 1) {
-            scissor_class* scissor = get_window(mpCamera)->getScissor();
-            cXyz eye = eyePos(w->mTarget);
-            cXyz screen;
+        switch (w->mBlure) {
+        case 1: {
+                scissor_class* scissor = get_window(mpCamera)->getScissor();
+                cXyz eye = eyePos(w->mTarget);
+                cXyz screen;
 
-            mDoLib_project(&eye, &screen);
-            SetBlurePosition(screen.x / scissor->mWidth, screen.y / scissor->mHeight, 0.0f);
-            SetBlureAlpha(0.5f + 0.7f * ratio);
-            SetBlureScale(1.1f + 0.09f * ratio, 0.98f - 0.18f * ratio, 0.0f);
+                mDoLib_project(&eye, &screen);
+                SetBlurePosition(screen.x / scissor->mWidth, screen.y / scissor->mHeight, 0.0f);
+                SetBlureAlpha(0.5f + 0.7f * ratio);
+                SetBlureScale(1.1f + 0.09f * ratio, 0.98f - 0.18f * ratio, 0.0f);
+            
+            break;
+        }
         }
 
         w->mFrames--;
@@ -3916,8 +3921,7 @@ bool dCamera_c::bSplineEvCamera() {
 
 /* 800BCFE8-800BD678       .text twoActor0EvCamera__9dCamera_cFv */
 bool dCamera_c::twoActor0EvCamera() {
-    /* Nonmatching - @11324 static-object serial, plus a slot swap between the cSAngle subtraction
-     * temp and its named copy */
+    /* Nonmatching - literal pool and local-static serials only */
     static f32 DefaultCtrCus = 1.0f;
     static f32 DefaultEyeCus = 1.0f;
     static cXyz DefaultGap(0.0f, 0.0f, 0.0f);
