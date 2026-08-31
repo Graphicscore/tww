@@ -42,6 +42,21 @@ inline dStage_Event_dt_c* nextMapData(dStage_Event_dt_c* i_eventDt) {
     return dComIfGp_event_nextStageEventDt(i_eventDt);
 }
 
+struct FixedFrameWork {
+    /* 0x378 */ u8 mHasTimer;
+    /* 0x379 */ u8 m379[0x37C - 0x379];
+    /* 0x37C */ cXyz mEye;
+    /* 0x388 */ cXyz mCenter;
+    /* 0x394 */ f32 mFovy;
+    /* 0x398 */ f32 mBank;
+    /* 0x39C */ fopAc_ac_c* mRelActor;
+    /* 0x3A0 */ char mRelUseMask[4];
+    /* 0x3A4 */ int mTimer;
+    /* 0x3A8 */ u8 mHasBank;
+    /* 0x3A9 */ u8 m3A9[0x3AC - 0x3A9];
+    /* 0x3AC */ cXyz mBasePos;
+};
+
 struct GameOverWork {
     /* 0x378 */ int mState;
     /* 0x37C */ int mTimer;
@@ -515,7 +530,129 @@ bool dCamera_c::pauseEvCamera() {
 
 /* 800B0AF8-800B14D4       .text fixedFrameEvCamera__9dCamera_cFv */
 bool dCamera_c::fixedFrameEvCamera() {
-    /* Nonmatching */
+    /* Nonmatching - stack frame is 0x20 short of the target, so every local slot is offset;
+     * instruction sequence otherwise matches */
+    static int DefaultTimer = -1;
+    static f32 DefaultBank = 0.0f;
+
+    FixedFrameWork* w = (FixedFrameWork*)&mWork;
+
+    if (m11C == 0) {
+        cXyz eye_gap;
+        cXyz ctr_gap;
+
+        getEvXyzData(&eye_gap, "Eye", mEye);
+        getEvXyzData(&ctr_gap, "Center", mCenter);
+        getEvXyzData(&w->mBasePos, "BasePos", cXyz::Zero);
+        getEvFloatData(&w->mFovy, "Fovy", mFovy);
+        w->mHasBank = getEvFloatData(&w->mBank, "Bank", DefaultBank);
+        w->mHasTimer = getEvIntData(&w->mTimer, "Timer", DefaultTimer);
+        getEvStringData(w->mRelUseMask, "RelUseMask", "oo");
+        w->mRelActor = getEvActor("RelActor");
+
+        if (w->mRelActor != NULL && w->mRelUseMask[0] == 'o') {
+            w->mCenter = relationalPos(w->mRelActor, &ctr_gap);
+        } else if (w->mRelUseMask[0] == 'n') {
+            cSGlobe globe(mEye - positionOf(w->mRelActor));
+            cSAngle diff = globe.U() - directionOf(w->mRelActor);
+
+            if (diff < cSAngle::_0) {
+                ctr_gap.x = -ctr_gap.x;
+            }
+
+            w->mCenter = relationalPos(w->mRelActor, &ctr_gap);
+        } else if (w->mRelUseMask[0] == 'p') {
+            cXyz pos;
+            cXyz diff;
+
+            pos = relationalPos(w->mRelActor, &ctr_gap);
+            diff = pos - positionOf(mpPlayerActor);
+
+            f32 near_dist = diff.abs();
+
+            ctr_gap.x = -ctr_gap.x;
+            pos = relationalPos(w->mRelActor, &ctr_gap);
+            diff = pos - positionOf(mpPlayerActor);
+
+            if (near_dist > diff.abs()) {
+                ctr_gap.x = -ctr_gap.x;
+            }
+
+            w->mCenter = relationalPos(w->mRelActor, &ctr_gap);
+        } else if (w->mRelUseMask[0] == 't') {
+            w->mCenter = attentionPos(w->mRelActor) + ctr_gap;
+        } else {
+            w->mCenter = ctr_gap;
+        }
+
+        if (w->mRelActor != NULL && w->mRelUseMask[1] == 'o') {
+            w->mEye = relationalPos(w->mRelActor, &eye_gap);
+        } else if (w->mRelActor != NULL && w->mRelUseMask[1] == 'r') {
+            if (m080 & 1) {
+                eye_gap.x = -eye_gap.x;
+            }
+
+            w->mEye = relationalPos(w->mRelActor, &eye_gap);
+
+            if (lineBGCheck(&w->mCenter, &w->mEye, 0x8F)) {
+                eye_gap.x = -eye_gap.x;
+                w->mEye = relationalPos(w->mRelActor, &eye_gap);
+            }
+        } else if (w->mRelUseMask[1] == 'n') {
+            cSGlobe globe(mEye - positionOf(w->mRelActor));
+            cSAngle diff = globe.U() - directionOf(w->mRelActor);
+
+            if (diff < cSAngle::_0) {
+                eye_gap.x = -eye_gap.x;
+            }
+
+            w->mEye = relationalPos(w->mRelActor, &eye_gap);
+
+            if (lineBGCheck(&w->mCenter, &w->mEye, 0x8F)) {
+                eye_gap.x = -eye_gap.x;
+            }
+        } else if (w->mRelUseMask[1] == 'p') {
+            cXyz pos;
+            cXyz diff;
+
+            pos = relationalPos(w->mRelActor, &eye_gap);
+            diff = pos - positionOf(mpPlayerActor);
+
+            f32 near_dist = diff.abs();
+
+            eye_gap.x = -eye_gap.x;
+            pos = relationalPos(w->mRelActor, &eye_gap);
+            diff = pos - positionOf(mpPlayerActor);
+
+            if (near_dist > diff.abs()) {
+                eye_gap.x = -eye_gap.x;
+            }
+
+            w->mEye = relationalPos(w->mRelActor, &eye_gap);
+        } else if (w->mRelUseMask[1] == 't') {
+            w->mEye = attentionPos(w->mRelActor) + eye_gap;
+        } else {
+            w->mEye = eye_gap;
+        }
+
+        SkipSmoother();
+    }
+
+    mViewCache.mCenter = w->mCenter;
+    mViewCache.mEye = w->mEye;
+    mViewCache.mDirection.Val(mViewCache.mEye - mViewCache.mCenter);
+    mViewCache.mFovy = w->mFovy;
+
+    if (w->mHasBank) {
+        mViewCache.mBank = cSAngle(DEG2S(w->mBank));
+        setFlag(0x400);
+    }
+
+    if (w->mHasTimer && m11C < (u32)w->mTimer) {
+        return false;
+    }
+
+    return true;
 }
 
 /* 800B14D4-800B18E4       .text stokerEvCamera__9dCamera_cFv */
