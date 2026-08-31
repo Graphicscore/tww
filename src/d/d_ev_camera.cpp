@@ -225,6 +225,26 @@ struct FixedPositionWork {
     /* 0x3C4 */ int mTimer;
 };
 
+struct WatchActorWork {
+    /* 0x378 */ cXyz mCtrGap;
+    /* 0x384 */ cXyz mCenter;
+    /* 0x390 */ f32 mCushion;
+    /* 0x394 */ int mNearTimer;
+    /* 0x398 */ f32 mNearDist;
+    /* 0x39C */ int mFarTimer;
+    /* 0x3A0 */ f32 mFarDist;
+    /* 0x3A4 */ f32 mZoomDist;
+    /* 0x3A8 */ f32 mZoomVAngle;
+    /* 0x3AC */ fopAc_ac_c* mTarget;
+    /* 0x3B0 */ fpc_ProcID mTargetId;
+    /* 0x3B4 */ cSGlobe mDirection;
+    /* 0x3BC */ u8 m3BC[0x3C4 - 0x3BC];
+    /* 0x3C4 */ cSGlobe mGoalGlobe;
+    /* 0x3CC */ int mState;
+    /* 0x3D0 */ int mBlure;
+    /* 0x3D4 */ f32 mFrontAngle;
+};
+
 struct RollingWork {
     /* 0x378 */ u8 mHasTimer;
     /* 0x379 */ u8 mHasBank;
@@ -1973,7 +1993,299 @@ bool dCamera_c::uniformAcceleEvCamera() {
 
 /* 800B6470-800B7640       .text watchActorEvCamera__9dCamera_cFv */
 bool dCamera_c::watchActorEvCamera() {
-    /* Nonmatching */
+    /* Nonmatching - two instructions of scheduling around the mViewCache.mDirection base
+     * address, plus literal pool and local-static serials */
+    static cXyz DefaultGap = cXyz::Zero;
+    static f32 DefaultCushion = 1.0f;
+    static f32 DefaultNearDist = 750.0f;
+    static f32 DefaultFarDist = 1500.0f;
+    static int DefaultNearTimer = 20;
+    static int DefaultFarTimer = 30;
+    static int DefaultJumpTimer = 1;
+    static f32 DefaultZoomDist = 400.0f;
+    static f32 DefaultZoomVAngle = 0.0f;
+    static f32 DefaultFrontAngle = 179.0f;
+
+    WatchActorWork* w = (WatchActorWork*)&mWork;
+
+    if (m11C == 0) {
+        getEvXyzData(&w->mCtrGap, "CtrGap", DefaultGap);
+        getEvFloatData(&w->mCushion, "Cushion", DefaultCushion);
+        getEvFloatData(&w->mNearDist, "NearDist", DefaultNearDist);
+        getEvFloatData(&w->mZoomDist, "ZoomDist", DefaultZoomDist);
+        getEvFloatData(&w->mZoomVAngle, "ZoomVAngle", DefaultZoomVAngle);
+        getEvFloatData(&w->mFarDist, "FarDist", DefaultFarDist);
+        getEvIntData(&w->mNearTimer, "NearTimer", DefaultNearTimer);
+        getEvIntData(&w->mFarTimer, "FarTimer", DefaultFarTimer);
+        getEvFloatData(&w->mFrontAngle, "FrontAngle", DefaultFrontAngle);
+        getEvIntData(&w->mBlure, "Blure", 0);
+        fopAc_ac_c* target = getEvActor("Target", "@STARTER");
+
+        w->mTarget = target;
+
+        if (target == NULL) {
+            return true;
+        }
+
+        w->mTargetId = fopAcM_GetID(w->mTarget);
+        w->mCenter = relationalPos(w->mTarget, &w->mCtrGap);
+        w->mDirection.Val(mViewCache.mEye - w->mCenter);
+
+        if (w->mDirection.R() < w->mNearDist) {
+            if (pointInSight(&w->mCenter)) {
+                w->mState = 0;
+            } else {
+                w->mState = 1;
+            }
+        } else if (w->mDirection.R() < w->mFarDist) {
+            w->mState = 2;
+        } else {
+            w->mState = 3;
+        }
+
+        SkipSmoother();
+    }
+
+    if (fopAcM_SearchByID(w->mTargetId) == NULL) {
+        return true;
+    }
+
+    bool is_door = false;
+    bool check_bg = true;
+
+    if (fopAcM_GetProfName(w->mTarget) == fpcNm_DOOR10_e ||
+        fopAcM_GetProfName(w->mTarget) == fpcNm_DOOR12_e ||
+        fopAcM_GetProfName(w->mTarget) == fpcNm_KNOB00_e ||
+        fopAcM_GetProfName(w->mTarget) == fpcNm_KDDOOR_e) {
+        is_door = true;
+    }
+
+    switch (w->mState) {
+    case 0:
+        mViewCache.mEye = mEye;
+        mViewCache.mDirection = mDirection;
+        break;
+
+    case 1:
+        if (m11C == 0) {
+            cXyz pos = attentionPos(mpPlayerActor);
+
+            pos.y += 10.0f;
+
+            cSGlobe globe(pos - w->mCenter);
+            cSGlobe eye_globe(mViewCache.mEye - positionOf(w->mTarget));
+            cSAngle side = eye_globe.U() - directionOf(w->mTarget);
+
+            if (side < cSAngle::_0) {
+                globe.U(globe.U() + cSAngle(5.0f));
+            } else {
+                globe.U(globe.U() + cSAngle(-5.0f));
+            }
+
+            cSAngle front = globe.U() - directionOf(w->mTarget);
+
+            if (front < cSAngle(-w->mFrontAngle)) {
+                globe.U(directionOf(w->mTarget) + cSAngle(-w->mFrontAngle));
+            } else if (front > cSAngle(w->mFrontAngle)) {
+                globe.U(directionOf(w->mTarget) + cSAngle(w->mFrontAngle));
+            }
+
+            w->mGoalGlobe.Val(120.0f + globe.R(), globe.V(), globe.U());
+
+            cSAngle step;
+
+            if (front >= cSAngle::_0) {
+                step.Val(-8.0f);
+            } else {
+                step.Val(8.0f);
+            }
+
+            cSGlobe try_globe(w->mGoalGlobe);
+            cXyz eye;
+
+            for (int i = 0; i < 45; i++) {
+                eye = w->mCenter + try_globe.Xyz();
+
+                if (check_bg && !lineBGCheck(&w->mCenter, &eye, 0x8F) &&
+                    !lineCollisionCheck(w->mCenter, eye, mpPlayerActor, w->mTarget)) {
+                    w->mGoalGlobe = try_globe;
+                    break;
+                }
+
+                try_globe.U(try_globe.U() + step);
+
+                if (is_door) {
+                    cSAngle diff = try_globe.U() - directionOf(w->mTarget);
+
+                    if (std::fabsf(diff.Degree()) < 70.0f) {
+                        check_bg = true;
+                    } else {
+                        check_bg = false;
+                    }
+                }
+
+                try_globe.V(try_globe.V() + cSAngle((i & 2) ? -5.0f : 5.0f) -
+                            try_globe.V() * 0.1f);
+            }
+        }
+
+        if (m11C < (u32)w->mNearTimer) {
+            cSGlobe& dir = mViewCache.mDirection;
+            f32 ratio = (f32)m11C / (f32)w->mNearTimer;
+
+            mViewCache.mCenter += (w->mCenter - mViewCache.mCenter) * ratio;
+            mViewCache.mDirection.R(mViewCache.mDirection.R() +
+                                    ratio * (w->mGoalGlobe.R() - mViewCache.mDirection.R()));
+            dir.U(dir.U() + (w->mGoalGlobe.U() - dir.U()) * ratio);
+            dir.V(dir.V() + (w->mGoalGlobe.V() - dir.V()) * ratio);
+            mViewCache.mEye = mViewCache.mCenter + dir.Xyz();
+            return false;
+        }
+        break;
+
+    case 2:
+        if (m11C == 0) {
+            cSGlobe globe(attentionPos(mpPlayerActor) - w->mCenter);
+
+            if (0.0f != w->mZoomVAngle) {
+                globe.V(cSAngle(w->mZoomVAngle));
+            }
+
+            cSAngle front = globe.U() - directionOf(w->mTarget);
+
+            if (front < cSAngle(-w->mFrontAngle)) {
+                globe.U(directionOf(w->mTarget) + cSAngle(-w->mFrontAngle));
+            } else if (front > cSAngle(w->mFrontAngle)) {
+                globe.U(directionOf(w->mTarget) + cSAngle(w->mFrontAngle));
+            }
+
+            if (std::fabsf(globe.R() - w->mZoomDist) < 30.0f) {
+                globe.U(globe.U() + (s16)0x384);
+            }
+
+            w->mGoalGlobe.Val(w->mZoomDist, globe.V(), globe.U());
+
+            cSAngle step;
+
+            if (front >= cSAngle::_0) {
+                step.Val(-8.0f);
+            } else {
+                step.Val(8.0f);
+            }
+
+            cSGlobe try_globe(w->mGoalGlobe);
+            cXyz eye;
+
+            for (int i = 0; i < 45; i++) {
+                eye = w->mCenter + try_globe.Xyz();
+
+                if (check_bg && !lineBGCheck(&w->mCenter, &eye, 0x8F) &&
+                    !lineCollisionCheck(w->mCenter, eye, mpPlayerActor, w->mTarget)) {
+                    w->mGoalGlobe = try_globe;
+                    break;
+                }
+
+                try_globe.U(try_globe.U() + step);
+
+                if (is_door) {
+                    cSAngle diff = try_globe.U() - directionOf(w->mTarget);
+
+                    if (std::fabsf(diff.Degree()) < 70.0f) {
+                        check_bg = true;
+                    } else {
+                        check_bg = false;
+                    }
+                }
+
+                try_globe.V(try_globe.V() + cSAngle((i & 2) ? -5.0f : 5.0f) -
+                            try_globe.V() * 0.1f);
+            }
+        }
+
+        if (m11C < (u32)w->mFarTimer) {
+            cSGlobe& dir = mViewCache.mDirection;
+            f32 ratio = (f32)m11C / (f32)w->mFarTimer;
+
+            mViewCache.mCenter += (w->mCenter - mViewCache.mCenter) * ratio;
+            mViewCache.mDirection.R(mViewCache.mDirection.R() +
+                                    ratio * (w->mGoalGlobe.R() - mViewCache.mDirection.R()));
+            dir.U(dir.U() + (w->mGoalGlobe.U() - dir.U()) * ratio);
+            dir.V(dir.V() + (w->mGoalGlobe.V() - dir.V()) * ratio);
+            mViewCache.mEye = mViewCache.mCenter + dir.Xyz();
+            return false;
+        }
+        break;
+
+    case 3:
+        if (m11C == 0) {
+            mViewCache.mCenter = w->mCenter;
+
+            cSGlobe globe(attentionPos(mpPlayerActor) - w->mCenter);
+
+            globe.R(w->mZoomDist);
+
+            cSAngle front = globe.U() - directionOf(w->mTarget);
+
+            if (front < cSAngle(-w->mFrontAngle)) {
+                globe.U(directionOf(w->mTarget) + cSAngle(-w->mFrontAngle));
+            } else if (front > cSAngle(w->mFrontAngle)) {
+                globe.U(directionOf(w->mTarget) + cSAngle(w->mFrontAngle));
+            }
+
+            if (0.0f != w->mZoomVAngle) {
+                globe.V(cSAngle(w->mZoomVAngle));
+            }
+
+            w->mGoalGlobe.Val(w->mZoomDist, globe.V(), globe.U());
+
+            cSAngle step;
+
+            if (front >= cSAngle::_0) {
+                step.Val(-8.0f);
+            } else {
+                step.Val(8.0f);
+            }
+
+            cSGlobe try_globe(w->mGoalGlobe);
+            cXyz eye;
+
+            for (int i = 0; i < 45; i++) {
+                eye = w->mCenter + try_globe.Xyz();
+
+                if (check_bg && !lineBGCheck(&w->mCenter, &eye, 0x8F) &&
+                    !lineCollisionCheck(w->mCenter, eye, mpPlayerActor, w->mTarget)) {
+                    w->mGoalGlobe = try_globe;
+                    break;
+                }
+
+                try_globe.U(try_globe.U() + step);
+
+                if (is_door) {
+                    cSAngle diff = try_globe.U() - directionOf(w->mTarget);
+
+                    if (std::fabsf(diff.Degree()) < 70.0f) {
+                        check_bg = true;
+                    } else {
+                        check_bg = false;
+                    }
+                }
+
+                try_globe.V(try_globe.V() + cSAngle((i & 2) ? -5.0f : 5.0f) -
+                            try_globe.V() * 0.1f);
+            }
+        }
+
+        mViewCache.mDirection = w->mGoalGlobe;
+        mViewCache.mEye = mViewCache.mCenter + mViewCache.mDirection.Xyz();
+        break;
+
+    default:
+        break;
+    }
+
+    SkipSmoother();
+
+    return true;
 }
 
 
@@ -1987,7 +2299,6 @@ bool lineCollisionCheck(cXyz i_start, cXyz i_end, fopAc_ac_c* i_actor1, fopAc_ac
 
 /* 800B76C8-800B7E00       .text restorePosEvCamera__9dCamera_cFv */
 bool dCamera_c::restorePosEvCamera() {
-    /* Nonmatching - @8298 static-object serial only, resolves once the rest of the TU is written */
     static cXyz DefaultGap = cXyz::Zero;
     static f32 DefaultCushion = 1.0f;
     static f32 DefaultNearDist = 750.0f;
@@ -2199,7 +2510,6 @@ bool dCamera_c::maptoolIdEvCamera() {
 
 /* 800B8108-800B81D0       .text styleEvCamera__9dCamera_cFv */
 bool dCamera_c::styleEvCamera() {
-    /* Nonmatching - @stringBase0 offsets for "Name"/"FN01", resolves once the rest of the TU is written */
     if (m108 == 0) {
         mEventData.field_0x08 = 0;
         m11C = 0;
@@ -2864,7 +3174,6 @@ bool dCamera_c::tornadoWarpEvCamera() {
 
 /* 800BA688-800BA7BC       .text saveEvCamera__9dCamera_cFv */
 bool dCamera_c::saveEvCamera() {
-    /* Nonmatching - @stringBase0 offsets only, resolves once the rest of the TU is written */
     int slot;
 
     getEvIntData(&slot, "Slot", 0);
@@ -2886,7 +3195,6 @@ bool dCamera_c::saveEvCamera() {
 
 /* 800BA7BC-800BA904       .text loadEvCamera__9dCamera_cFv */
 bool dCamera_c::loadEvCamera() {
-    /* Nonmatching - @stringBase0 offsets only, resolves once the rest of the TU is written */
     int slot;
 
     getEvIntData(&slot, "Slot", 0);
@@ -3460,7 +3768,6 @@ bool dCamera_c::possessedEvCamera() {
 
 /* 800BC9D8-800BCDA0       .text fixedFramesEvCamera__9dCamera_cFv */
 bool dCamera_c::fixedFramesEvCamera() {
-    /* Nonmatching - @stringBase0 offsets only, resolves once the rest of the TU is written */
     FixedFramesWork* w = (FixedFramesWork*)&mWork;
 
     if (m11C == 0) {
@@ -3551,7 +3858,6 @@ bool dCamera_c::fixedFramesEvCamera() {
 
 /* 800BCDA0-800BCFE8       .text bSplineEvCamera__9dCamera_cFv */
 bool dCamera_c::bSplineEvCamera() {
-    /* Nonmatching - @stringBase0 offsets only, resolves once the rest of the TU is written */
     BSplineWork* w = (BSplineWork*)&mWork;
 
     bool ret = false;
