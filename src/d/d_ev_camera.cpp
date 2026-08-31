@@ -1990,8 +1990,6 @@ bool dCamera_c::uniformAcceleEvCamera() {
 
 /* 800B6470-800B7640       .text watchActorEvCamera__9dCamera_cFv */
 bool dCamera_c::watchActorEvCamera() {
-    /* Nonmatching - two instructions of scheduling around the mViewCache.mDirection base
-     * address, plus literal pool and local-static serials */
     static cXyz DefaultGap = cXyz::Zero;
     static f32 DefaultCushion = 1.0f;
     static f32 DefaultNearDist = 750.0f;
@@ -2127,10 +2125,12 @@ bool dCamera_c::watchActorEvCamera() {
         }
 
         if (m11C < (u32)w->mNearTimer) {
-            cSGlobe& dir = mViewCache.mDirection;
             f32 ratio = (f32)m11C / (f32)w->mNearTimer;
 
             mViewCache.mCenter += (w->mCenter - mViewCache.mCenter) * ratio;
+
+            cSGlobe& dir = mViewCache.mDirection;
+
             mViewCache.mDirection.R(mViewCache.mDirection.R() +
                                     ratio * (w->mGoalGlobe.R() - mViewCache.mDirection.R()));
             dir.U(dir.U() + (w->mGoalGlobe.U() - dir.U()) * ratio);
@@ -2200,10 +2200,12 @@ bool dCamera_c::watchActorEvCamera() {
         }
 
         if (m11C < (u32)w->mFarTimer) {
-            cSGlobe& dir = mViewCache.mDirection;
             f32 ratio = (f32)m11C / (f32)w->mFarTimer;
 
             mViewCache.mCenter += (w->mCenter - mViewCache.mCenter) * ratio;
+
+            cSGlobe& dir = mViewCache.mDirection;
+
             mViewCache.mDirection.R(mViewCache.mDirection.R() +
                                     ratio * (w->mGoalGlobe.R() - mViewCache.mDirection.R()));
             dir.U(dir.U() + (w->mGoalGlobe.U() - dir.U()) * ratio);
@@ -3049,8 +3051,7 @@ bool dCamera_c::turnToActorEvCamera() {
 
 /* 800B9FB0-800BA688       .text tornadoWarpEvCamera__9dCamera_cFv */
 bool dCamera_c::tornadoWarpEvCamera() {
-    /* Nonmatching - regswap between the nearest-index and loop-counter locals, plus literal
-     * pool serials */
+    /* Nonmatching - literal pool and local-static serials only */
     TornadoWarpWork* w = (TornadoWarpWork*)&mWork;
 
     if (m11C == 0) {
@@ -3082,11 +3083,13 @@ bool dCamera_c::tornadoWarpEvCamera() {
         cXyz base(-180000.0f, 750.0f, -200000.0f);
         cXyz center = relationalPos(mpPlayerActor, &base_gap[1]);
 
+        int i;
+
         if (m786) {
             f32 near_dist = 100000000.0f;
             int near_idx = 3;
 
-            for (int i = 0; i < 4; i++) {
+            for (i = 0; i < 4; i++) {
                 eye = relationalPos(mpPlayerActor, &warp_gap[i], step);
 
                 cXyz diff = eye - base;
@@ -3102,7 +3105,7 @@ bool dCamera_c::tornadoWarpEvCamera() {
 
             eye = relationalPos(mpPlayerActor, &rotated);
         } else {
-            for (int i = 0; i < 4; i++) {
+            for (i = 0; i < 4; i++) {
                 eye = relationalPos(mpPlayerActor, &warp_gap[i], step);
 
                 if (!lineBGCheck(&center, &eye, 0x7F) &&
