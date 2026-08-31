@@ -653,15 +653,16 @@ bool dCamera_c::pauseEvCamera() {
 
 /* 800B0AF8-800B14D4       .text fixedFrameEvCamera__9dCamera_cFv */
 bool dCamera_c::fixedFrameEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
+    /* Nonmatching - the temporaries band sits 0x30 lower than the target's; frame size, locals
+     * and instruction sequence all match. Plus literal pool and local-static serials */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
     FixedFrameWork* w = (FixedFrameWork*)&mWork;
 
     if (m11C == 0) {
-        cXyz eye_gap;
         cXyz ctr_gap;
+        cXyz eye_gap;
 
         getEvXyzData(&eye_gap, "Eye", mEye);
         getEvXyzData(&ctr_gap, "Center", mCenter);
@@ -685,18 +686,18 @@ bool dCamera_c::fixedFrameEvCamera() {
             w->mCenter = relationalPos(w->mRelActor, &ctr_gap);
         } else if (w->mRelUseMask[0] == 'p') {
             cXyz pos;
-            cXyz diff;
 
             pos = relationalPos(w->mRelActor, &ctr_gap);
-            diff = pos - positionOf(mpPlayerActor);
 
-            f32 near_dist = diff.abs();
+            cXyz near_gap = pos - positionOf(mpPlayerActor);
+            f32 near_dist = near_gap.abs();
 
             ctr_gap.x = -ctr_gap.x;
             pos = relationalPos(w->mRelActor, &ctr_gap);
-            diff = pos - positionOf(mpPlayerActor);
 
-            if (near_dist > diff.abs()) {
+            cXyz far_gap = pos - positionOf(mpPlayerActor);
+
+            if (near_dist > far_gap.abs()) {
                 ctr_gap.x = -ctr_gap.x;
             }
 
@@ -735,18 +736,18 @@ bool dCamera_c::fixedFrameEvCamera() {
             }
         } else if (w->mRelUseMask[1] == 'p') {
             cXyz pos;
-            cXyz diff;
 
             pos = relationalPos(w->mRelActor, &eye_gap);
-            diff = pos - positionOf(mpPlayerActor);
 
-            f32 near_dist = diff.abs();
+            cXyz near_gap = pos - positionOf(mpPlayerActor);
+            f32 near_dist = near_gap.abs();
 
             eye_gap.x = -eye_gap.x;
             pos = relationalPos(w->mRelActor, &eye_gap);
-            diff = pos - positionOf(mpPlayerActor);
 
-            if (near_dist > diff.abs()) {
+            cXyz far_gap = pos - positionOf(mpPlayerActor);
+
+            if (near_dist > far_gap.abs()) {
                 eye_gap.x = -eye_gap.x;
             }
 
@@ -2521,7 +2522,8 @@ bool dCamera_c::styleEvCamera() {
 
 /* 800B81D0-800B8AB8       .text gameOverEvCamera__9dCamera_cFv */
 bool dCamera_c::gameOverEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
+    /* Nonmatching - frame is 0xC short of the target: one more cXyz local, used somewhere that
+     * emits no extra instructions. Plus literal pool and local-static serials */
     GameOverWork* w = (GameOverWork*)&mWork;
 
     cXyz ctr_gap(0.0f, -25.0f, 0.0f);
