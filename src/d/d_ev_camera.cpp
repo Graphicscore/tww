@@ -3219,9 +3219,8 @@ bool dCamera_c::loadEvCamera() {
 
 /* 800BA904-800BB39C       .text useItem0EvCamera__9dCamera_cFv */
 bool dCamera_c::useItem0EvCamera() {
-    /* Nonmatching - constant setup and frame match exactly; mwcc orders the array template copies
-     * and the pointer-table stores differently from the target, and the literal pool serials
-     * resolve once the rest of the TU is written */
+    /* Nonmatching - the mType range test compiles to a branch pair the target spells with one
+     * branch, plus the array-template rodata object's serial */
     cXyz c5(19.885f, 11.056f, -2.464f);
     cXyz a0[2] = {
         cXyz(45.319f, 57.196f, 22.627f),
@@ -3259,14 +3258,15 @@ bool dCamera_c::useItem0EvCamera() {
         cXyz(-220.0f, 46.0f, 48.0f),
         cXyz(84.0f, 164.0f, -38.0f),
     };
+    cXyz* ctr_tbl[7] = {&c3, &c4, &c3, &c2, &c5, &c1, &c0};
+    cXyz* eye_tbl[7] = {a4, a5, a4, a3, a0, a2, a1};
     int frames[7] = {0, 0, 0, 0, 0, 73, 0};
     int durations[7] = {45, 40, 40, 40, 10, 45, 55};
     f32 fovys[7] = {65.0f, 65.0f, 65.0f, 65.0f, 70.0f, 70.0f, 65.0f};
     int counts[7] = {2, 4, 3, 4, 3, 3, 3};
-    cXyz* ctr_tbl[7] = {&c3, &c4, &c3, &c2, &c5, &c1, &c0};
-    cXyz* eye_tbl[7] = {a4, a5, a4, a3, a0, a2, a1};
 
     UseItemWork* w = (UseItemWork*)&mWork;
+    int i;
     bool ret = false;
 
     if (m11C == 0) {
@@ -3282,9 +3282,7 @@ bool dCamera_c::useItem0EvCamera() {
         // fall through
     case 0xA: {
         w->mState = 0xA;
-        w->mFrame++;
-
-        if (w->mFrame < frames[w->mType]) {
+        if (++w->mFrame < frames[w->mType]) {
             break;
         }
 
@@ -3292,7 +3290,7 @@ bool dCamera_c::useItem0EvCamera() {
 
         cXyz eye;
 
-        if ((m07C & 7) == 0 && w->mType >= 2 && w->mType < 4) {
+        if ((m07C & 7) == 0 && w->mType < 4 && w->mType >= 2) {
             cXyz tmp = eye_tbl[w->mType][0];
 
             eye_tbl[w->mType][0] = eye_tbl[w->mType][1];
@@ -3300,8 +3298,6 @@ bool dCamera_c::useItem0EvCamera() {
         }
 
         w->mCenter = relationalPos(mpPlayerActor, ctr_tbl[w->mType]);
-
-        int i;
 
         for (i = 0; i < counts[w->mType]; i++) {
             eye = relationalPos(mpPlayerActor, &eye_tbl[w->mType][i]);
@@ -3337,12 +3333,11 @@ bool dCamera_c::useItem0EvCamera() {
         cSAngle inclination;
         cSAngle azimuth;
 
+        f32 radius = mViewCache.mDirection.R();
+
         azimuth = mViewCache.mDirection.V();
         inclination = mViewCache.mDirection.U();
-
-        f32 radius =
-            mViewCache.mDirection.R() + (w->mGlobe.R() - mViewCache.mDirection.R()) * ratio;
-
+        radius += ratio * (w->mGlobe.R() - radius);
         azimuth += (w->mGlobe.V() - azimuth) * ratio;
         inclination += (w->mGlobe.U() - inclination) * ratio;
         mViewCache.mDirection.Val(radius, azimuth, inclination);
@@ -3382,7 +3377,8 @@ bool dCamera_c::useItem0EvCamera() {
 
 /* 800BB39C-800BBD88       .text useItem1EvCamera__9dCamera_cFv */
 bool dCamera_c::useItem1EvCamera() {
-    /* Nonmatching - as useItem0EvCamera, plus the frame is 0x10 over, so local slots are offset */
+    /* Nonmatching - the mType range test compiles to a branch pair the target spells with one
+     * branch, plus the array-template rodata object's serial */
     cXyz d5(0.0f, -16.0f, -17.0f);
     cXyz b5[3] = {
         cXyz(36.0f, 55.0f, 17.0f),
@@ -3420,12 +3416,11 @@ bool dCamera_c::useItem1EvCamera() {
         cXyz(-220.0f, 46.0f, 48.0f),
         cXyz(84.0f, 164.0f, -38.0f),
     };
-    int frames[7] = {0, 0, 0, 0, 0, 73, 0};
+    cXyz* ctr_tbl[7] = {&d3, &d4, &d3, &d2, &d5, &d1, &d0};
+    cXyz* eye_tbl[7] = {b3, b4, b3, b2, b5, b1, b0};
     int durations[7] = {45, 40, 40, 40, 10, 45, 55};
     f32 fovys[7] = {65.0f, 65.0f, 65.0f, 65.0f, 70.0f, 70.0f, 65.0f};
     int counts[7] = {2, 4, 3, 4, 3, 3, 3};
-    cXyz* ctr_tbl[7] = {&d3, &d4, &d3, &d2, &d5, &d1, &d0};
-    cXyz* eye_tbl[7] = {b3, b4, b3, b2, b5, b1, b0};
 
     UseItemWork* w = (UseItemWork*)&mWork;
     bool ret = false;
@@ -3439,21 +3434,13 @@ bool dCamera_c::useItem1EvCamera() {
     default:
         getEvIntData(&w->mType, "Type", 0);
         w->mRepeat = 0;
-        w->mFrame = 0;
         // fall through
     case 0xA: {
-        w->mState = 0xA;
-        w->mFrame++;
-
-        if (w->mFrame < frames[w->mType]) {
-            break;
-        }
-
         w->mFrame = 0;
 
         cXyz eye;
 
-        if ((m07C & 7) == 0 && w->mType >= 2 && w->mType < 4) {
+        if ((m07C & 7) == 0 && w->mType < 4 && w->mType >= 2) {
             cXyz tmp = eye_tbl[w->mType][0];
 
             eye_tbl[w->mType][0] = eye_tbl[w->mType][1];
@@ -3493,12 +3480,11 @@ bool dCamera_c::useItem1EvCamera() {
         cSAngle inclination;
         cSAngle azimuth;
 
+        f32 radius = mViewCache.mDirection.R();
+
         azimuth = mViewCache.mDirection.V();
         inclination = mViewCache.mDirection.U();
-
-        f32 radius =
-            mViewCache.mDirection.R() + (w->mGlobe.R() - mViewCache.mDirection.R()) * ratio;
-
+        radius += ratio * (w->mGlobe.R() - radius);
         azimuth += (w->mGlobe.V() - azimuth) * ratio;
         inclination += (w->mGlobe.U() - inclination) * ratio;
         mViewCache.mDirection.Val(radius, azimuth, inclination);
