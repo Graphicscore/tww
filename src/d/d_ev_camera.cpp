@@ -701,8 +701,8 @@ bool dCamera_c::stokerEvCamera() {
         }
 
         globe.Val(w->mCtrGap);
-        globe.U(globe.V() + w->mTarget->shape_angle.x);
-        globe.V(globe.U() + w->mTarget->shape_angle.y);
+        globe.V(globe.V() + w->mTarget->shape_angle.x);
+        globe.U(globe.U() + w->mTarget->shape_angle.y);
         mViewCache.mCenter = attentionPos(w->mTarget) + globe.Xyz();
     }
 
@@ -712,8 +712,8 @@ bool dCamera_c::stokerEvCamera() {
         }
 
         globe.Val(w->mEyeGap);
-        globe.U(globe.V() + w->mStoker->shape_angle.x);
-        globe.V(globe.U() + w->mStoker->shape_angle.y);
+        globe.V(globe.V() + w->mStoker->shape_angle.x);
+        globe.U(globe.U() + w->mStoker->shape_angle.y);
         mViewCache.mEye = attentionPos(w->mStoker) + globe.Xyz();
     }
 
@@ -951,9 +951,9 @@ bool dCamera_c::restorePosEvCamera() {
 
             mViewCache.mDirection.R(mViewCache.mDirection.R() +
                                     (w->mGlobe.R() - mViewCache.mDirection.R()) * ratio);
-            mViewCache.mDirection.V(mViewCache.mDirection.U() +
+            mViewCache.mDirection.U(mViewCache.mDirection.U() +
                                     (w->mGlobe.U() - mViewCache.mDirection.U()) * ratio);
-            mViewCache.mDirection.U(mViewCache.mDirection.V() +
+            mViewCache.mDirection.V(mViewCache.mDirection.V() +
                                     (w->mGlobe.V() - mViewCache.mDirection.V()) * ratio);
             mViewCache.mEye = mViewCache.mCenter + mViewCache.mDirection.Xyz();
             mViewCache.mFovy += (w->mFovy - mViewCache.mFovy) * ratio;
@@ -1359,17 +1359,17 @@ bool dCamera_c::turnToActorEvCamera() {
         cSAngle diff = eye_globe.U() - directionOf(w->mTarget);
 
         if (diff < cSAngle::_0) {
-            globe.V(globe.U() + cSAngle(5.0f));
+            globe.U(globe.U() + cSAngle(5.0f));
         } else {
-            globe.V(globe.U() + cSAngle(-5.0f));
+            globe.U(globe.U() + cSAngle(-5.0f));
         }
 
         cSAngle turn = globe.U() - directionOf(w->mTarget);
 
         if (turn < cSAngle(-w->mFrontAngle)) {
-            globe.V(directionOf(w->mTarget) + cSAngle(-w->mFrontAngle));
+            globe.U(directionOf(w->mTarget) + cSAngle(-w->mFrontAngle));
         } else if (turn > cSAngle(w->mFrontAngle)) {
-            globe.V(directionOf(w->mTarget) + cSAngle(w->mFrontAngle));
+            globe.U(directionOf(w->mTarget) + cSAngle(w->mFrontAngle));
         }
 
         w->mGlobe.Val(120.0f, globe.V(), globe.U());
@@ -1382,9 +1382,9 @@ bool dCamera_c::turnToActorEvCamera() {
         mViewCache.mCenter += (w->mCenter - mViewCache.mCenter) * ratio;
         mViewCache.mDirection.R(mViewCache.mDirection.R() +
                                 (w->mGlobe.R() - mViewCache.mDirection.R()) * ratio);
-        mViewCache.mDirection.V(mViewCache.mDirection.U() +
+        mViewCache.mDirection.U(mViewCache.mDirection.U() +
                                 (w->mGlobe.U() - mViewCache.mDirection.U()) * ratio);
-        mViewCache.mDirection.U(mViewCache.mDirection.V() +
+        mViewCache.mDirection.V(mViewCache.mDirection.V() +
                                 (w->mGlobe.V() - mViewCache.mDirection.V()) * ratio);
         mViewCache.mEye = mViewCache.mCenter + mViewCache.mDirection.Xyz();
         mViewCache.mDirection.Val(mViewCache.mEye - mViewCache.mCenter);
@@ -2070,9 +2070,9 @@ bool dCamera_c::possessedEvCamera() {
         mViewCache.mCenter += (eyePos(w->mTarget) - mViewCache.mCenter) * ratio;
         mViewCache.mDirection.R(mViewCache.mDirection.R() +
                                 (w->mGlobe.R() - mViewCache.mDirection.R()) * ratio);
-        mViewCache.mDirection.U(mViewCache.mDirection.V() +
+        mViewCache.mDirection.V(mViewCache.mDirection.V() +
                                 (w->mGlobe.V() - mViewCache.mDirection.V()) * ratio);
-        mViewCache.mDirection.V(mViewCache.mDirection.U() +
+        mViewCache.mDirection.U(mViewCache.mDirection.U() +
                                 (w->mGlobe.U() - mViewCache.mDirection.U()) * ratio);
         cXyz eye = mViewCache.mCenter + mViewCache.mDirection.Xyz();
 
