@@ -285,8 +285,8 @@ struct WindDirectionWork {
     /* 0x3DC */ f32 mNearFovy;
     /* 0x3E0 */ f32 mFarFovy;
     /* 0x3E4 */ f32 mFovyCushion;
-    /* 0x3E8 */ f32 mTotal;
-    /* 0x3EC */ f32 mAccum;
+    /* 0x3E8 */ f32 m3E8;
+    /* 0x3EC */ f32 m3EC;
 };
 
 struct UniformTransWork {
@@ -325,12 +325,12 @@ struct UniformWork {
     /* 0x3C0 */ char mRelUseMask[4];
     /* 0x3C4 */ u8 m3C4[0x3C8 - 0x3C4];
     /* 0x3C8 */ int mTimer;
-    /* 0x3CC */ f32 mTotal;
+    /* 0x3CC */ f32 m3CC;
     /* 0x3D0 */ int m3D0;
     /* 0x3D4 */ int m3D4;
     /* 0x3D8 */ int mType;
     /* 0x3DC */ int mTransType;
-    /* 0x3E0 */ f32 mAccum;
+    /* 0x3E0 */ f32 m3E0;
     /* 0x3E4 */ f32 mCushion;
     /* 0x3E8 */ cSGlobe mGlobe;
     /* 0x3F0 */ bool mHasBank;
@@ -348,7 +348,7 @@ struct FixedFramesWork {
     /* 0x3A4 */ fopAc_ac_c* mRelActor;
     /* 0x3A8 */ char mRelUseMask[4];
     /* 0x3AC */ int mTimer;
-    /* 0x3B0 */ int mNum;
+    /* 0x3B0 */ int m3B0;
 };
 
 }  // namespace
@@ -1392,13 +1392,13 @@ bool dCamera_c::uniformBrakeEvCamera() {
         getEvIntData(&w->mType, "BrakeType", 0);
 
         if (w->mType != 1) {
-            w->mTotal = w->m3D0 * w->m3D4;
-            w->mTotal += (w->m3D4 * (w->m3D4 + 1)) >> 1;
+            w->m3CC = w->m3D0 * w->m3D4;
+            w->m3CC += (w->m3D4 * (w->m3D4 + 1)) >> 1;
         } else {
             f32 peak = 1 << (w->m3D4 - 1);
 
-            w->mTotal = w->m3D0 * peak;
-            w->mTotal += 2.0f * peak - 1.0f;
+            w->m3CC = w->m3D0 * peak;
+            w->m3CC += 2.0f * peak - 1.0f;
         }
 
         getEvXyzData(&w->mEye, "Eye", mEye);
@@ -1533,7 +1533,7 @@ bool dCamera_c::uniformBrakeEvCamera() {
         }
 
         w->mGlobe = mDirection.Invert();
-        w->mAccum = 0.0f;
+        w->m3E0 = 0.0f;
         SkipSmoother();
     }
 
@@ -1547,19 +1547,19 @@ bool dCamera_c::uniformBrakeEvCamera() {
     } else {
         if (w->mType != 1) {
             if (m11C < (u32)w->m3D0) {
-                w->mAccum += w->m3D4;
+                w->m3E0 += w->m3D4;
             } else {
-                w->mAccum += w->mTimer - m11C;
+                w->m3E0 += w->mTimer - m11C;
             }
         } else {
             if (m11C < (u32)w->m3D0) {
-                w->mAccum += 1 << (w->m3D4 - 1);
+                w->m3E0 += 1 << (w->m3D4 - 1);
             } else {
-                w->mAccum += 1 << ((w->mTimer - m11C) - 1);
+                w->m3E0 += 1 << ((w->mTimer - m11C) - 1);
             }
         }
 
-        ratio = w->mAccum / w->mTotal;
+        ratio = w->m3E0 / w->m3CC;
     }
 
     if (w->mRelActor != NULL) {
@@ -1695,13 +1695,13 @@ bool dCamera_c::uniformAcceleEvCamera() {
         w->m3D0 = w->mTimer - w->m3D4;
 
         if (w->mType != 1) {
-            w->mTotal = w->m3D0 * w->m3D4;
-            w->mTotal += (w->m3D4 * (w->m3D4 + 1)) >> 1;
+            w->m3CC = w->m3D0 * w->m3D4;
+            w->m3CC += (w->m3D4 * (w->m3D4 + 1)) >> 1;
         } else {
             f32 peak = 1 << (w->m3D4 - 1);
 
-            w->mTotal = w->m3D0 * peak;
-            w->mTotal += 2.0f * peak - 1.0f;
+            w->m3CC = w->m3D0 * peak;
+            w->m3CC += 2.0f * peak - 1.0f;
         }
 
         getEvXyzData(&w->mEye, "Eye", mEye);
@@ -1836,7 +1836,7 @@ bool dCamera_c::uniformAcceleEvCamera() {
         }
 
         w->mGlobe = mDirection.Invert();
-        w->mAccum = 0.0f;
+        w->m3E0 = 0.0f;
         SkipSmoother();
     }
 
@@ -1850,19 +1850,19 @@ bool dCamera_c::uniformAcceleEvCamera() {
     } else {
         if (w->mType != 1) {
             if (m11C < (u32)w->m3D4) {
-                w->mAccum += m11C;
+                w->m3E0 += m11C;
             } else {
-                w->mAccum += w->m3D4;
+                w->m3E0 += w->m3D4;
             }
         } else {
             if (m11C < (u32)w->m3D4) {
-                w->mAccum += 1 << (m11C - 1);
+                w->m3E0 += 1 << (m11C - 1);
             } else {
-                w->mAccum += 1 << (w->m3D4 - 1);
+                w->m3E0 += 1 << (w->m3D4 - 1);
             }
         }
 
-        ratio = w->mAccum / w->mTotal;
+        ratio = w->m3E0 / w->m3CC;
     }
 
     if (w->mRelActor != NULL) {
@@ -2882,8 +2882,8 @@ bool dCamera_c::windDirectionEvCamera() {
             w->mStartGlobe = mViewCache.mDirection;
             w->mUpCount = 0x28;
             w->mTimer = 0;
-            w->mAccum = 0.0f;
-            w->mTotal = (w->mUpCount * (w->mUpCount + 1)) >> 1;
+            w->m3EC = 0.0f;
+            w->m3E8 = (w->mUpCount * (w->mUpCount + 1)) >> 1;
         }
         break;
 
@@ -2891,8 +2891,8 @@ bool dCamera_c::windDirectionEvCamera() {
         if (w->mTimer < w->mUpCount) {
             f32 ratio;
 
-            w->mAccum += w->mTimer;
-            ratio = w->mAccum / w->mTotal;
+            w->m3EC += w->mTimer;
+            ratio = w->m3EC / w->m3E8;
             mViewCache.mDirection.R(w->mStartGlobe.R() +
                                     ratio * (w->mEndGlobe.R() - w->mStartGlobe.R()));
             mViewCache.mDirection.V(w->mStartGlobe.V() +
@@ -3741,7 +3741,7 @@ bool dCamera_c::fixedFramesEvCamera() {
     FixedFramesWork* w = (FixedFramesWork*)&mWork;
 
     if (m11C == 0) {
-        w->mNum = 9999;
+        w->m3B0 = 9999;
 
         char* name = "Centers";
         int num = dComIfGp_evmng_getMySubstanceNum(mEventData.mStaffIdx, name);
@@ -3749,8 +3749,8 @@ bool dCamera_c::fixedFramesEvCamera() {
         if (num != 0) {
             w->mCenters = dComIfGp_evmng_getMyXyzP(mEventData.mStaffIdx, name);
 
-            if (w->mNum > num) {
-                w->mNum = num;
+            if (w->m3B0 > num) {
+                w->m3B0 = num;
             }
         } else {
             return true;
@@ -3762,8 +3762,8 @@ bool dCamera_c::fixedFramesEvCamera() {
         if (num != 0) {
             w->mEyes = dComIfGp_evmng_getMyXyzP(mEventData.mStaffIdx, name);
 
-            if (w->mNum > num) {
-                w->mNum = num;
+            if (w->m3B0 > num) {
+                w->m3B0 = num;
             }
         } else {
             return true;
@@ -3775,8 +3775,8 @@ bool dCamera_c::fixedFramesEvCamera() {
         if (num != 0) {
             w->mFovys = dComIfGp_evmng_getMyFloatP(mEventData.mStaffIdx, name);
 
-            if (w->mNum > num) {
-                w->mNum = num;
+            if (w->m3B0 > num) {
+                w->m3B0 = num;
             }
         } else {
             return true;
@@ -3786,7 +3786,7 @@ bool dCamera_c::fixedFramesEvCamera() {
         getEvStringData(w->mRelUseMask, "RelUseMask", "oo");
         w->mRelActor = getEvActor("RelActor");
 
-        for (int i = 0; i < w->mNum; i++) {
+        for (int i = 0; i < w->m3B0; i++) {
             cXyz center = w->mCenters[i];
             cXyz eye = w->mEyes[i];
 
