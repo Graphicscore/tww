@@ -653,8 +653,6 @@ bool dCamera_c::pauseEvCamera() {
 
 /* 800B0AF8-800B14D4       .text fixedFrameEvCamera__9dCamera_cFv */
 bool dCamera_c::fixedFrameEvCamera() {
-    /* Nonmatching - the temporaries band sits 0x30 lower than the target's; frame size, locals
-     * and instruction sequence all match. Plus literal pool and local-static serials */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -689,15 +687,12 @@ bool dCamera_c::fixedFrameEvCamera() {
 
             pos = relationalPos(w->mRelActor, &ctr_gap);
 
-            cXyz near_gap = pos - positionOf(mpPlayerActor);
-            f32 near_dist = near_gap.abs();
+            f32 near_dist = cXyz(pos - positionOf(mpPlayerActor)).abs();
 
             ctr_gap.x = -ctr_gap.x;
             pos = relationalPos(w->mRelActor, &ctr_gap);
 
-            cXyz far_gap = pos - positionOf(mpPlayerActor);
-
-            if (near_dist > far_gap.abs()) {
+            if (near_dist > cXyz(pos - positionOf(mpPlayerActor)).abs()) {
                 ctr_gap.x = -ctr_gap.x;
             }
 
@@ -719,8 +714,9 @@ bool dCamera_c::fixedFrameEvCamera() {
 
             if (lineBGCheck(&w->mCenter, &w->mEye, 0x8F)) {
                 eye_gap.x = -eye_gap.x;
-                w->mEye = relationalPos(w->mRelActor, &eye_gap);
             }
+
+            w->mEye = relationalPos(w->mRelActor, &eye_gap);
         } else if (w->mRelUseMask[1] == 'n') {
             cSGlobe globe(mEye - positionOf(w->mRelActor));
             cSAngle diff = globe.U() - directionOf(w->mRelActor);
@@ -739,15 +735,12 @@ bool dCamera_c::fixedFrameEvCamera() {
 
             pos = relationalPos(w->mRelActor, &eye_gap);
 
-            cXyz near_gap = pos - positionOf(mpPlayerActor);
-            f32 near_dist = near_gap.abs();
+            f32 near_dist = cXyz(pos - positionOf(mpPlayerActor)).abs();
 
             eye_gap.x = -eye_gap.x;
             pos = relationalPos(w->mRelActor, &eye_gap);
 
-            cXyz far_gap = pos - positionOf(mpPlayerActor);
-
-            if (near_dist > far_gap.abs()) {
+            if (near_dist > cXyz(pos - positionOf(mpPlayerActor)).abs()) {
                 eye_gap.x = -eye_gap.x;
             }
 
@@ -848,7 +841,6 @@ bool dCamera_c::stokerEvCamera() {
 
 /* 800B18E4-800B2680       .text rollingEvCamera__9dCamera_cFv */
 bool dCamera_c::rollingEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
     static f32 DefaultRoll = 2.0f;
@@ -864,8 +856,9 @@ bool dCamera_c::rollingEvCamera() {
         w->mHasBank = getEvFloatData(&w->mBank, "Bank", DefaultBank);
         getEvFloatData(&w->mRoll, "Roll", DefaultRoll);
         getEvFloatData(&w->mRadiusAdd, "RadiusAdd", 0.0f);
-        getEvFloatData(&w->mLatitude, "Latitude",
-                       cSGlobe(w->mEyeGap - w->mCtrGap).V().Degree());
+        cSGlobe globe(w->mEyeGap - w->mCtrGap);
+
+        getEvFloatData(&w->mLatitude, "Latitude", globe.V().Degree());
         w->mHasTimer = getEvIntData(&w->mTimer, "Timer", DefaultTimer);
         getEvStringData(w->mRelUseMask, "RelUseMask", "oo");
         w->mRelActor = getEvActor("RelActor");
@@ -887,15 +880,12 @@ bool dCamera_c::rollingEvCamera() {
 
                 pos = relationalPos(w->mRelActor, &w->mCtrGap);
 
-                cXyz near_gap = pos - positionOf(mpPlayerActor);
-                f32 near_dist = near_gap.abs();
+                f32 near_dist = cXyz(pos - positionOf(mpPlayerActor)).abs();
 
                 w->mCtrGap.x = -w->mCtrGap.x;
                 pos = relationalPos(w->mRelActor, &w->mCtrGap);
 
-                cXyz far_gap = pos - positionOf(mpPlayerActor);
-
-                if (near_dist > far_gap.abs()) {
+                if (near_dist > cXyz(pos - positionOf(mpPlayerActor)).abs()) {
                     w->mCtrGap.x = -w->mCtrGap.x;
                 }
 
@@ -933,15 +923,12 @@ bool dCamera_c::rollingEvCamera() {
 
             pos = relationalPos(w->mRelActor, &w->mEyeGap);
 
-            cXyz near_gap = pos - positionOf(mpPlayerActor);
-            f32 near_dist = near_gap.abs();
+            f32 near_dist = cXyz(pos - positionOf(mpPlayerActor)).abs();
 
             w->mEyeGap.x = -w->mEyeGap.x;
             pos = relationalPos(w->mRelActor, &w->mEyeGap);
 
-            cXyz far_gap = pos - positionOf(mpPlayerActor);
-
-            if (near_dist > far_gap.abs()) {
+            if (near_dist > cXyz(pos - positionOf(mpPlayerActor)).abs()) {
                 w->mEyeGap.x = -w->mEyeGap.x;
             }
 
@@ -970,15 +957,12 @@ bool dCamera_c::rollingEvCamera() {
 
             pos = relationalPos(w->mRelActor, &w->mCtrGap);
 
-            cXyz near_gap = pos - positionOf(mpPlayerActor);
-            f32 near_dist = near_gap.abs();
+            f32 near_dist = cXyz(pos - positionOf(mpPlayerActor)).abs();
 
             w->mCtrGap.x = -w->mCtrGap.x;
             pos = relationalPos(w->mRelActor, &w->mCtrGap);
 
-            cXyz far_gap = pos - positionOf(mpPlayerActor);
-
-            if (near_dist > far_gap.abs()) {
+            if (near_dist > cXyz(pos - positionOf(mpPlayerActor)).abs()) {
                 w->mCtrGap.x = -w->mCtrGap.x;
             }
 
@@ -1101,7 +1085,6 @@ bool dCamera_c::fixedPositionEvCamera() {
 
 /* 800B2B60-800B3CC8       .text uniformTransEvCamera__9dCamera_cFv */
 bool dCamera_c::uniformTransEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -1114,8 +1097,6 @@ bool dCamera_c::uniformTransEvCamera() {
 
     static f32 curvePoints[] = {0.0f, 0.0f, 1.0f, 1.0f};
 
-    cXyz center;
-    cXyz eye;
     f32 ratio;
     bool ret = false;
 
@@ -1342,6 +1323,9 @@ bool dCamera_c::uniformTransEvCamera() {
         end.mEye = w->mEye;
     }
 
+    cXyz center;
+    cXyz eye;
+
     if (w->mTransType == 1) {
         center = start.mCenter + (end.mCenter - start.mCenter) * ratio;
         mViewCache.mCenter += (center - mViewCache.mCenter) * w->mCushion;
@@ -1385,7 +1369,6 @@ bool dCamera_c::uniformTransEvCamera() {
 
 /* 800B3E18-800B5110       .text uniformBrakeEvCamera__9dCamera_cFv */
 bool dCamera_c::uniformBrakeEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -1396,8 +1379,6 @@ bool dCamera_c::uniformBrakeEvCamera() {
         cXyz mCenter;
     } start, end;
 
-    cXyz center;
-    cXyz eye;
     f32 ratio;
     bool ret = false;
 
@@ -1644,6 +1625,9 @@ bool dCamera_c::uniformBrakeEvCamera() {
         end.mEye = w->mEye;
     }
 
+    cXyz center;
+    cXyz eye;
+
     if (w->mTransType == 1) {
         center = start.mCenter + (end.mCenter - start.mCenter) * ratio;
         mViewCache.mCenter += (center - mViewCache.mCenter) * w->mCushion;
@@ -1688,7 +1672,6 @@ bool dCamera_c::uniformBrakeEvCamera() {
 
 /* 800B514C-800B6434       .text uniformAcceleEvCamera__9dCamera_cFv */
 bool dCamera_c::uniformAcceleEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     static int DefaultTimer = -1;
     static f32 DefaultBank = 0.0f;
 
@@ -1699,8 +1682,6 @@ bool dCamera_c::uniformAcceleEvCamera() {
         cXyz mCenter;
     } start, end;
 
-    cXyz center;
-    cXyz eye;
     f32 ratio;
     bool ret = false;
 
@@ -1946,6 +1927,9 @@ bool dCamera_c::uniformAcceleEvCamera() {
         end.mCenter = w->mCenter;
         end.mEye = w->mEye;
     }
+
+    cXyz center;
+    cXyz eye;
 
     if (w->mTransType == 1) {
         center = start.mCenter + (end.mCenter - start.mCenter) * ratio;
@@ -2441,8 +2425,6 @@ bool dCamera_c::talktoEvCamera() {
 
 /* 800B7EBC-800B8108       .text maptoolIdEvCamera__9dCamera_cFv */
 bool dCamera_c::maptoolIdEvCamera() {
-    /* Nonmatching - regswap on the field_0x14/field_0x10 locals, plus @stringBase0 and float
-     * literal pool offsets */
     if (m108 == 0) {
         int id;
 
@@ -2456,8 +2438,12 @@ bool dCamera_c::maptoolIdEvCamera() {
         return true;
     }
 
-    s8 ev_param = mEventData.field_0xcc->field_0x14;
-    u8 maptool_id = mEventData.field_0xcc->field_0x10;
+    u8 maptool_id;
+    int ev_param;
+
+    ev_param = mEventData.field_0xcc->field_0x14;
+    maptool_id = mEventData.field_0xcc->field_0x10;
+
     int mode = -1;
 
     if (mEventData.field_0xcc->field_0x12 != 0xFF) {
@@ -2522,8 +2508,6 @@ bool dCamera_c::styleEvCamera() {
 
 /* 800B81D0-800B8AB8       .text gameOverEvCamera__9dCamera_cFv */
 bool dCamera_c::gameOverEvCamera() {
-    /* Nonmatching - frame is 0xC short of the target: one more cXyz local, used somewhere that
-     * emits no extra instructions. Plus literal pool and local-static serials */
     GameOverWork* w = (GameOverWork*)&mWork;
 
     cXyz ctr_gap(0.0f, -25.0f, 0.0f);
@@ -2533,6 +2517,10 @@ bool dCamera_c::gameOverEvCamera() {
     };
     cXyz down_ctr_gap(0.0f, -40.0f, -35.0f);
     cXyz down_eye_gap(0.0f, 170.0f, 115.0f);
+    cXyz center;
+    cXyz eye;
+    cXyz down_center;
+    cXyz down_eye;
     cXyz drown_ctr_gap(0.0f, 14.0f, 30.0f);
     cXyz drown_eye_gap(70.0f, 155.0f, 175.0f);
 
@@ -2554,7 +2542,6 @@ bool dCamera_c::gameOverEvCamera() {
     }
 
     cSAngle angle;
-    cXyz center;
 
     if (dComIfGp_checkPlayerStatus0(mPadId, 0x10000)) {
         angle = cSAngle::_270;
@@ -2568,7 +2555,6 @@ bool dCamera_c::gameOverEvCamera() {
         w->mState = 1;
         // fall through
     case 1: {
-        cXyz eye;
         int i;
 
         center = relationalPos(mpPlayerActor, &ctr_gap);
@@ -2621,51 +2607,49 @@ bool dCamera_c::gameOverEvCamera() {
         // fall through
     case 3: {
 
-        cXyz eye;
-
-        center = relationalPos(mpPlayerActor, &down_ctr_gap, angle);
+        down_center = relationalPos(mpPlayerActor, &down_ctr_gap, angle);
 
 
-        eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
+        down_eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
 
-        if (eye.y < m368 + positionOf(mpPlayerActor).y) {
-            eye.y = m368 + positionOf(mpPlayerActor).y;
+        if (down_eye.y < m368 + positionOf(mpPlayerActor).y) {
+            down_eye.y = m368 + positionOf(mpPlayerActor).y;
         }
 
-        if (lineBGCheck(&center, &eye, 0x7F)) {
+        if (lineBGCheck(&down_center, &down_eye, 0x7F)) {
             down_eye_gap.z = -down_eye_gap.z;
 
 
-            eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
+            down_eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
 
-            if (eye.y < m368 + positionOf(mpPlayerActor).y) {
-                eye.y = m368 + positionOf(mpPlayerActor).y;
+            if (down_eye.y < m368 + positionOf(mpPlayerActor).y) {
+                down_eye.y = m368 + positionOf(mpPlayerActor).y;
             }
 
-            if (lineBGCheck(&center, &eye, 0x7F)) {
+            if (lineBGCheck(&down_center, &down_eye, 0x7F)) {
                 down_ctr_gap.z = 0.0f;
 
 
-                center = relationalPos(mpPlayerActor, &down_ctr_gap, angle);
+                down_center = relationalPos(mpPlayerActor, &down_ctr_gap, angle);
 
 
-                eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
+                down_eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
 
-                if (eye.y < m368 + positionOf(mpPlayerActor).y) {
-                    eye.y = m368 + positionOf(mpPlayerActor).y;
+                if (down_eye.y < m368 + positionOf(mpPlayerActor).y) {
+                    down_eye.y = m368 + positionOf(mpPlayerActor).y;
                 }
 
-                if (lineBGCheck(&center, &eye, 0x7F)) {
+                if (lineBGCheck(&down_center, &down_eye, 0x7F)) {
                     down_eye_gap.z = -down_eye_gap.z;
 
 
-                    eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
+                    down_eye = relationalPos(mpPlayerActor, &down_eye_gap, angle);
 
-                    if (eye.y < m368 + positionOf(mpPlayerActor).y) {
-                        eye.y = m368 + positionOf(mpPlayerActor).y;
+                    if (down_eye.y < m368 + positionOf(mpPlayerActor).y) {
+                        down_eye.y = m368 + positionOf(mpPlayerActor).y;
                     }
 
-                    lineBGCheck(&center, &eye, 0x7F);
+                    lineBGCheck(&down_center, &down_eye, 0x7F);
                 }
             }
         }
@@ -2755,7 +2739,6 @@ bool dCamera_c::tactEvCamera() {
 
 /* 800B8C90-800B99B8       .text windDirectionEvCamera__9dCamera_cFv */
 bool dCamera_c::windDirectionEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     WindDirectionWork* w = (WindDirectionWork*)&mWork;
 
     cXyz center_gap[3] = {
@@ -2805,9 +2788,7 @@ bool dCamera_c::windDirectionEvCamera() {
         getEvFloatData(&w->mFarFovy, "FarFovy", 85.0f);
         getEvFloatData(&w->mFovyCushion, "FovyCushion", 0.05f);
 
-        cXyz far_gap = positionOf(w->mBirdActor) - positionOf(mpPlayerActor);
-
-        w->mFarDist = far_gap.abs();
+        w->mFarDist = cXyz(positionOf(w->mBirdActor) - positionOf(mpPlayerActor)).abs();
         mViewCache.mFovy = w->mFarFovy;
         getEvIntData(&w->mType, "Type", type);
 
@@ -2861,10 +2842,9 @@ bool dCamera_c::windDirectionEvCamera() {
         w->mCenter = w->mCenter + (attentionPos(w->mBirdActor) - w->mCenter) * 0.02f;
 
         cM3dGLin line(w->mCenter, mViewCache.mEye);
+        cXyz pnt = attentionPos(mpPlayerActor);
         cXyz cross;
         f32 len;
-
-        cXyz pnt = attentionPos(mpPlayerActor);
 
         if (cM3d_Len3dSqPntAndSegLine(&line, &pnt, &cross, &len)) {
             mViewCache.mCenter = cross;
@@ -2953,8 +2933,7 @@ bool dCamera_c::windDirectionEvCamera() {
     }
 
     if (w->mType == 0) {
-        cXyz gap = positionOf(w->mBirdActor) - positionOf(mpPlayerActor);
-        f32 dist = gap.abs();
+        f32 dist = cXyz(positionOf(w->mBirdActor) - positionOf(mpPlayerActor)).abs();
         f32 ratio;
 
         if (dist < w->mStopDist) {
@@ -2981,7 +2960,6 @@ bool dCamera_c::windDirectionEvCamera() {
 
 /* 800B99B8-800B9FB0       .text turnToActorEvCamera__9dCamera_cFv */
 bool dCamera_c::turnToActorEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     static cXyz DefaultGap(0.0f, 40.0f, 0.0f);
     static f32 DefaultCushion = 1.0f;
     static f32 DefaultDist = 120.0f;
@@ -2995,7 +2973,7 @@ bool dCamera_c::turnToActorEvCamera() {
         getEvFloatData(&w->mCushion, "Cushion", DefaultCushion);
         getEvIntData(&w->mTimer, "Timer", DefaultTimer);
         getEvFloatData(&w->mFrontAngle, "FrontAngle", DefaultFrontAngle);
-        fopAc_ac_c* target = getEvActor("Target", "@PLAYER");
+        fopAc_ac_c* target = getEvActor("Target", "@STARTER");
 
         w->mTarget = target;
 
@@ -3053,7 +3031,6 @@ bool dCamera_c::turnToActorEvCamera() {
 
 /* 800B9FB0-800BA688       .text tornadoWarpEvCamera__9dCamera_cFv */
 bool dCamera_c::tornadoWarpEvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     TornadoWarpWork* w = (TornadoWarpWork*)&mWork;
 
     if (m11C == 0) {
@@ -3062,10 +3039,8 @@ bool dCamera_c::tornadoWarpEvCamera() {
         SkipSmoother();
     }
 
-    cXyz base_gap[2] = {
-        cXyz(0.0f, 60.0f, 0.0f),
-        cXyz(0.0f, -40.0f, 0.0f),
-    };
+    cXyz base_gap0 = cXyz(0.0f, -40.0f, 0.0f);
+    cXyz base_gap1 = cXyz(0.0f, 60.0f, 0.0f);
     cXyz warp_gap[4] = {
         cXyz(900.0f, 800.0f, 0.0f),
         cXyz(-900.0f, 800.0f, 0.0f),
@@ -3073,6 +3048,7 @@ bool dCamera_c::tornadoWarpEvCamera() {
         cXyz(0.0f, 800.0f, -900.0f),
     };
     cSAngle step(45.0f);
+    cXyz center;
     cXyz eye;
 
     switch (w->mState) {
@@ -3083,7 +3059,8 @@ bool dCamera_c::tornadoWarpEvCamera() {
         w->mTimer = 0x64;
 
         cXyz base(-180000.0f, 750.0f, -200000.0f);
-        cXyz center = relationalPos(mpPlayerActor, &base_gap[1]);
+
+        center = relationalPos(mpPlayerActor, &base_gap0);
 
         int i;
 
@@ -3094,8 +3071,7 @@ bool dCamera_c::tornadoWarpEvCamera() {
             for (i = 0; i < 4; i++) {
                 eye = relationalPos(mpPlayerActor, &warp_gap[i], step);
 
-                cXyz diff = eye - base;
-                f32 dist = diff.abs();
+                f32 dist = cXyz(eye - base).abs();
 
                 if (dist < near_dist) {
                     near_dist = dist;
@@ -3122,7 +3098,7 @@ bool dCamera_c::tornadoWarpEvCamera() {
         // fall through
     case 1: {
         mViewCache.mCenter +=
-            (relationalPos(mpPlayerActor, &base_gap[1]) - mViewCache.mCenter) * 0.25f;
+            (relationalPos(mpPlayerActor, &base_gap0) - mViewCache.mCenter) * 0.25f;
 
         f32 ratio = 1.0f / (f32)w->mTimer;
 
@@ -3147,7 +3123,7 @@ bool dCamera_c::tornadoWarpEvCamera() {
         // fall through
     case 2: {
         mViewCache.mCenter +=
-            (relationalPos(mpPlayerActor, &base_gap[0]) - mViewCache.mCenter) * 0.25f;
+            (relationalPos(mpPlayerActor, &base_gap1) - mViewCache.mCenter) * 0.25f;
 
         eye = w->mWarpPos;
         eye.y = attentionPos(mpPlayerActor).y;
@@ -3216,7 +3192,6 @@ bool dCamera_c::loadEvCamera() {
 
 /* 800BA904-800BB39C       .text useItem0EvCamera__9dCamera_cFv */
 bool dCamera_c::useItem0EvCamera() {
-    /* Nonmatching - the array-template rodata object's serial only */
     cXyz c5(19.885f, 11.056f, -2.464f);
     cXyz a0[2] = {
         cXyz(45.319f, 57.196f, 22.627f),
@@ -3256,10 +3231,10 @@ bool dCamera_c::useItem0EvCamera() {
     };
     cXyz* ctr_tbl[7] = {&c3, &c4, &c3, &c2, &c5, &c1, &c0};
     cXyz* eye_tbl[7] = {a4, a5, a4, a3, a0, a2, a1};
-    int frames[7] = {0, 0, 0, 0, 0, 73, 0};
-    int durations[7] = {45, 40, 40, 40, 10, 45, 55};
-    f32 fovys[7] = {65.0f, 65.0f, 65.0f, 65.0f, 70.0f, 70.0f, 65.0f};
     int counts[7] = {2, 4, 3, 4, 3, 3, 3};
+    f32 fovys[7] = {65.0f, 65.0f, 65.0f, 65.0f, 70.0f, 70.0f, 65.0f};
+    int durations[7] = {45, 40, 40, 40, 10, 45, 55};
+    int frames[7] = {0, 0, 0, 0, 0, 73, 0};
 
     UseItemWork* w = (UseItemWork*)&mWork;
     int i;
@@ -3379,7 +3354,6 @@ bool dCamera_c::useItem0EvCamera() {
 
 /* 800BB39C-800BBD88       .text useItem1EvCamera__9dCamera_cFv */
 bool dCamera_c::useItem1EvCamera() {
-    /* Nonmatching - the array-template rodata object's serial only */
     cXyz d5(0.0f, -16.0f, -17.0f);
     cXyz b5[3] = {
         cXyz(36.0f, 55.0f, 17.0f),
@@ -3419,9 +3393,9 @@ bool dCamera_c::useItem1EvCamera() {
     };
     cXyz* ctr_tbl[7] = {&d3, &d4, &d3, &d2, &d5, &d1, &d0};
     cXyz* eye_tbl[7] = {b3, b4, b3, b2, b5, b1, b0};
-    int durations[7] = {45, 40, 40, 40, 10, 45, 55};
+    int counts[7] = {3, 4, 3, 3, 3, 3, 3};
     f32 fovys[7] = {65.0f, 65.0f, 65.0f, 65.0f, 70.0f, 70.0f, 65.0f};
-    int counts[7] = {2, 4, 3, 4, 3, 3, 3};
+    int durations[7] = {45, 40, 40, 40, 10, 45, 40};
 
     UseItemWork* w = (UseItemWork*)&mWork;
     bool ret = false;
@@ -3926,7 +3900,6 @@ bool dCamera_c::bSplineEvCamera() {
 
 /* 800BCFE8-800BD678       .text twoActor0EvCamera__9dCamera_cFv */
 bool dCamera_c::twoActor0EvCamera() {
-    /* Nonmatching - literal pool and local-static serials only */
     static f32 DefaultCtrCus = 1.0f;
     static f32 DefaultEyeCus = 1.0f;
     static cXyz DefaultGap(0.0f, 0.0f, 0.0f);
@@ -3987,8 +3960,7 @@ bool dCamera_c::twoActor0EvCamera() {
 
     mViewCache.mCenter += (center - mViewCache.mCenter) * w->mCtrCus;
 
-    cSAngle diff = globe.U() - mViewCache.mDirection.U();
-    f32 longitude = diff.Degree();
+    f32 longitude = cSAngle(globe.U() - mViewCache.mDirection.U()).Degree();
 
     if (w->mLongitude < w->mLongitudeMin) {
         longitude = w->mLongitudeMin;
