@@ -117,7 +117,7 @@ struct RestorePosWork {
     /* 0x3AC */ fopAc_ac_c* mTarget;
     /* 0x3B0 */ cSGlobe mGlobe;
     /* 0x3B8 */ int mMode;
-    /* 0x3BC */ int mSlot;
+    /* 0x3BC */ int mDest;
     /* 0x3C0 */ cXyz mCenter;
     /* 0x3CC */ cXyz mEye;
     /* 0x3D8 */ f32 mFovy;
@@ -326,9 +326,9 @@ struct UniformWork {
     /* 0x3C4 */ u8 m3C4[0x3C8 - 0x3C4];
     /* 0x3C8 */ int mTimer;
     /* 0x3CC */ f32 mTotal;
-    /* 0x3D0 */ int mUniformFrames;
-    /* 0x3D4 */ int mRampFrames;
-    /* 0x3D8 */ int mRampType;
+    /* 0x3D0 */ int m3D0;
+    /* 0x3D4 */ int m3D4;
+    /* 0x3D8 */ int mType;
     /* 0x3DC */ int mTransType;
     /* 0x3E0 */ f32 mAccum;
     /* 0x3E4 */ f32 mCushion;
@@ -856,9 +856,9 @@ bool dCamera_c::rollingEvCamera() {
         w->mHasBank = getEvFloatData(&w->mBank, "Bank", DefaultBank);
         getEvFloatData(&w->mRoll, "Roll", DefaultRoll);
         getEvFloatData(&w->mRadiusAdd, "RadiusAdd", 0.0f);
-        cSGlobe globe(w->mEyeGap - w->mCtrGap);
+        cSGlobe gap_globe(w->mEyeGap - w->mCtrGap);
 
-        getEvFloatData(&w->mLatitude, "Latitude", globe.V().Degree());
+        getEvFloatData(&w->mLatitude, "Latitude", gap_globe.V().Degree());
         w->mHasTimer = getEvIntData(&w->mTimer, "Timer", DefaultTimer);
         getEvStringData(w->mRelUseMask, "RelUseMask", "oo");
         w->mRelActor = getEvActor("RelActor");
@@ -1387,17 +1387,17 @@ bool dCamera_c::uniformBrakeEvCamera() {
             return true;
         }
 
-        getEvIntData(&w->mUniformFrames, "BrakingPoint", 0);
-        w->mRampFrames = w->mTimer - w->mUniformFrames;
-        getEvIntData(&w->mRampType, "BrakeType", 0);
+        getEvIntData(&w->m3D0, "BrakingPoint", 0);
+        w->m3D4 = w->mTimer - w->m3D0;
+        getEvIntData(&w->mType, "BrakeType", 0);
 
-        if (w->mRampType != 1) {
-            w->mTotal = w->mUniformFrames * w->mRampFrames;
-            w->mTotal += (w->mRampFrames * (w->mRampFrames + 1)) >> 1;
+        if (w->mType != 1) {
+            w->mTotal = w->m3D0 * w->m3D4;
+            w->mTotal += (w->m3D4 * (w->m3D4 + 1)) >> 1;
         } else {
-            f32 peak = 1 << (w->mRampFrames - 1);
+            f32 peak = 1 << (w->m3D4 - 1);
 
-            w->mTotal = w->mUniformFrames * peak;
+            w->mTotal = w->m3D0 * peak;
             w->mTotal += 2.0f * peak - 1.0f;
         }
 
@@ -1545,15 +1545,15 @@ bool dCamera_c::uniformBrakeEvCamera() {
         ret = true;
         ratio = 1.0f;
     } else {
-        if (w->mRampType != 1) {
-            if (m11C < (u32)w->mUniformFrames) {
-                w->mAccum += w->mRampFrames;
+        if (w->mType != 1) {
+            if (m11C < (u32)w->m3D0) {
+                w->mAccum += w->m3D4;
             } else {
                 w->mAccum += w->mTimer - m11C;
             }
         } else {
-            if (m11C < (u32)w->mUniformFrames) {
-                w->mAccum += 1 << (w->mRampFrames - 1);
+            if (m11C < (u32)w->m3D0) {
+                w->mAccum += 1 << (w->m3D4 - 1);
             } else {
                 w->mAccum += 1 << ((w->mTimer - m11C) - 1);
             }
@@ -1690,17 +1690,17 @@ bool dCamera_c::uniformAcceleEvCamera() {
             return true;
         }
 
-        getEvIntData(&w->mRampFrames, "AcceleTimer", w->mTimer);
-        getEvIntData(&w->mRampType, "AcceleType", 0);
-        w->mUniformFrames = w->mTimer - w->mRampFrames;
+        getEvIntData(&w->m3D4, "AcceleTimer", w->mTimer);
+        getEvIntData(&w->mType, "AcceleType", 0);
+        w->m3D0 = w->mTimer - w->m3D4;
 
-        if (w->mRampType != 1) {
-            w->mTotal = w->mUniformFrames * w->mRampFrames;
-            w->mTotal += (w->mRampFrames * (w->mRampFrames + 1)) >> 1;
+        if (w->mType != 1) {
+            w->mTotal = w->m3D0 * w->m3D4;
+            w->mTotal += (w->m3D4 * (w->m3D4 + 1)) >> 1;
         } else {
-            f32 peak = 1 << (w->mRampFrames - 1);
+            f32 peak = 1 << (w->m3D4 - 1);
 
-            w->mTotal = w->mUniformFrames * peak;
+            w->mTotal = w->m3D0 * peak;
             w->mTotal += 2.0f * peak - 1.0f;
         }
 
@@ -1848,17 +1848,17 @@ bool dCamera_c::uniformAcceleEvCamera() {
         ret = true;
         ratio = 1.0f;
     } else {
-        if (w->mRampType != 1) {
-            if (m11C < (u32)w->mRampFrames) {
+        if (w->mType != 1) {
+            if (m11C < (u32)w->m3D4) {
                 w->mAccum += m11C;
             } else {
-                w->mAccum += w->mRampFrames;
+                w->mAccum += w->m3D4;
             }
         } else {
-            if (m11C < (u32)w->mRampFrames) {
+            if (m11C < (u32)w->m3D4) {
                 w->mAccum += 1 << (m11C - 1);
             } else {
-                w->mAccum += 1 << (w->mRampFrames - 1);
+                w->mAccum += 1 << (w->m3D4 - 1);
             }
         }
 
@@ -2301,10 +2301,10 @@ bool dCamera_c::restorePosEvCamera() {
         getEvFloatData(&w->mFarDist, "FarDist", DefaultFarDist);
         getEvIntData(&w->mNearTimer, "NearTimer", DefaultNearTimer);
         getEvIntData(&w->mFarTimer, "FarTimer", DefaultFarTimer);
-        getEvIntData(&w->mSlot, "Dest", 2);
+        getEvIntData(&w->mDest, "Dest", 2);
         getEvIntData(&w->mTargetType, "TargetType", 0);
 
-        switch (w->mSlot) {
+        switch (w->mDest) {
         case 0:
             w->mCenter = m0A4[0].m00.mCenter;
             w->mEye = m0A4[0].m00.mEye;
