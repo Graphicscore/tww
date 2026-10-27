@@ -38,7 +38,7 @@ jobs:
 
     # Restore cached files
     - name: Cache build
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           build
@@ -95,7 +95,7 @@ jobs:
         dotnet-version: "8.x.x"
 
     - name: Cache node modules
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: node_modules
         key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
