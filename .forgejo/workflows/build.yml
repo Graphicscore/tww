@@ -81,7 +81,7 @@ jobs:
         github-server-url: https://github.com
 
     - name: Download artifact
-      uses: https://data.forgejo.org/forgejo/download-artifact@v4
+      uses: https://data.forgejo.org/forgejo/download-artifact@v7
       with:
         name: GZLE01_report
         path: ./artifacts
