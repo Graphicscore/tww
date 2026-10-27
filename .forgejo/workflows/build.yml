@@ -56,14 +56,14 @@ jobs:
 
     # Upload map files
     - name: Upload map
-      uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+      uses: https://data.forgejo.org/forgejo/upload-artifact@v5
       with:
         name: ${{ matrix.version }}_maps
         path: build/${{ matrix.version }}/**/*.MAP
 
     # Upload progress report
     - name: Upload report
-      uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+      uses: https://data.forgejo.org/forgejo/upload-artifact@v5
       with:
         name: ${{ matrix.version }}_report
         path: build/${{ matrix.version }}/report.json
